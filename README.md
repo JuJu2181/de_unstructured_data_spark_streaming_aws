@@ -23,3 +23,5 @@ python -m venv .udsa_env
 pip install -r requirements.txt
 ```
 
+3. Run the Script
+spark-submit main.py
