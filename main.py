@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType, DateType
-from pyspark.sql.functions import udf
+from pyspark.sql.functions import udf, regexp_replace
 from udf_utils import *
 from config.config import configuration
 
@@ -42,12 +42,12 @@ if __name__ == '__main__':
         StructField('p_name', StringType(), True),
         StructField('p_category', StringType(), True),
         StructField('p_price', DoubleType(), True),
-        StructField('p_create_date', DateType(), True),
+        StructField('p_created_date', DateType(), True),
         StructField('p_expiry_date', DateType(), True),
     ])
 
     # define udfs
-    udf = define_udfs()
+    udfs = define_udfs()
 
     # reading from a file stream
     txt_file_df = (
@@ -57,9 +57,36 @@ if __name__ == '__main__':
         .load(txt_src_dir)
     )
 
+    txt_file_df = txt_file_df.withColumn('p_id', regexp_replace(udfs['extract_p_id_udf']('value'), r'\r',' '))
+    txt_file_df = txt_file_df.withColumn('p_name', udfs['extract_p_name_udf']('value'))
+    txt_file_df = txt_file_df.withColumn('p_category', udfs['extract_p_category_udf']('value'))
+    txt_file_df = txt_file_df.withColumn('p_price', udfs['extract_p_price_udf']('value'))
+    txt_file_df = txt_file_df.withColumn('p_create_date', udfs['extract_dates_udf']('value').getField('p_created_date'))
+    txt_file_df = txt_file_df.withColumn('p_expiry_date', udfs['extract_dates_udf']('value').getField('p_expiry_date'))
+
+    txt_parsed_df = txt_file_df.select('p_id', 'p_name', 'p_category', 'p_price', 'p_create_date', 'p_expiry_date')
+
+    # reading from json source
+    json_df = (
+        spark.readStream
+        .json(json_src_dir,schema=data_schema,multiLine=True)
+    )
+
+    # reading from csv source
+    csv_df = (
+        spark.readStream
+        .format('csv')
+        .option('header', 'true')
+        .schema(data_schema)
+        .load(csv_src_dir)
+    )
+
+    # union all the dataframes
+    src_union_df = txt_parsed_df.union(json_df).union(csv_df)
+
     #to display the read stream in console as output
     query = (
-        txt_file_df
+        src_union_df
         .writeStream
         .outputMode('append')
         .format('console')
