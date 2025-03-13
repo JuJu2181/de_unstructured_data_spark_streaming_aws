@@ -1,4 +1,4 @@
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType, DateType
 from pyspark.sql.functions import udf, regexp_replace
 from udf_utils import *
@@ -15,6 +15,18 @@ def define_udfs():
             StructField('p_expiry_date', DateType(), True)
         ])),
     }
+
+def streamWriter(input: DataFrame, checkpointFolder, output):
+    return (
+        input
+        .writeStream
+        .outputMode('append')
+        .format('parquet')
+        .option('path', output)
+        .option('checkpointLocation', checkpointFolder)
+        .trigger(processingTime='5 seconds')
+        .start()
+    )
 
 if __name__ == '__main__':
     # Initialize the Spark session
@@ -84,14 +96,19 @@ if __name__ == '__main__':
     # union all the dataframes
     src_union_df = txt_parsed_df.union(json_df).union(csv_df)
 
+    # to write the dataframe into s3 data lake in parquet format
+    query = streamWriter(src_union_df, checkpointFolder='s3a://anish-shilpakar-bucket/checkpoints', output='s3a://anish-shilpakar-bucket/data/spark_unstructured/bronze')
+
     #to display the read stream in console as output
-    query = (
-        src_union_df
-        .writeStream
-        .outputMode('append')
-        .format('console')
-        .option('truncate', False)
-        .start()
-    ) 
+    # query = (
+    #     src_union_df
+    #     .writeStream
+    #     .outputMode('append')
+    #     .format('console')
+    #     .option('truncate', False)
+    #     .start()
+    # ) 
 
     query.awaitTermination()
+
+    spark.stop()

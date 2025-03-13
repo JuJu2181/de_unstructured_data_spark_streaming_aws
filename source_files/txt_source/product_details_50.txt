@@ -1,0 +1,8 @@
+Pr1050
+Product: Pepsi
+
+Category: Food
+
+Costs Rs.3625
+
+Best From 2025-10-10 to 2026-10-10

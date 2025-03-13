@@ -24,4 +24,11 @@ pip install -r requirements.txt
 ```
 
 3. Run the Script
+```
 spark-submit main.py
+```
+
+Using docker spark master
+```
+docker exec -it docker_setup-spark-master-1 spark-submit --master spark://spark-master:7077 jobs/main.py
+```
