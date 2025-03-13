@@ -1,0 +1,6 @@
+p_id,p_name,p_category,p_price,p_created_date,p_expiry_date
+Pr2,Crime and Punishment,Book,550,2025-01-01,2025-09-30 
+Pr3,Crochet,Gift,450,2023-01-01,2025-09-30
+Pr4,The Great Gatsby,Book,350,2025-01-01,2025-09-30
+Pr7,PS4, Electronics, 25000,2025-01-01,2025-09-30 
+Pr8,The Alchemist,Book,250,2025-01-01,2025-09-30
